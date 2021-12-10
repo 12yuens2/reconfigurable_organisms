@@ -8,7 +8,7 @@ from functools import partial
 from base import Sim, Env, ObjectiveDict
 from networks import CPPN, DirectEncoding
 from softbot import Genotype, Phenotype, Population
-from tools.algorithms import ParetoOptimization
+from tools.algorithms import ParetoOptimization, MultiLevelSelectionOptimization
 from tools.checkpointing import continue_from_checkpoint
 from tools.utils import make_material_tree, count_occurrences
 
@@ -30,7 +30,7 @@ VOXEL_SIZE = 0.05  # meters
 # MAX_ELASTIC_MOD = 1e8
 STIFFNESS = 5e6
 
-POP_SIZE = 50
+POP_SIZE = 100
 MAX_GENS = 5000
 NUM_RANDOM_INDS = 1
 
@@ -140,11 +140,14 @@ if not os.path.isfile("./" + RUN_DIR + "/pickledPops/Gen_0.pickle"):
 
     my_sim = Sim(dt_frac=DT_FRAC, simulation_time=SIM_TIME, fitness_eval_init_time=INIT_TIME)
 
-    my_env = Env(temp_amp=TEMP_AMP, fluid_environment=FLUID_ENV, aggregate_drag_coefficient=AGGREGATE_DRAG_COEF,
-                 lattice_dimension=VOXEL_SIZE, grav_acc=GRAV_ACC, frequency=FREQ, muscle_stiffness=STIFFNESS)
+    my_env = Env(temp_amp=TEMP_AMP, fluid_environment=FLUID_ENV,
+                 aggregate_drag_coefficient=AGGREGATE_DRAG_COEF,
+                 lattice_dimension=VOXEL_SIZE, grav_acc=GRAV_ACC,
+                 frequency=FREQ, muscle_stiffness=STIFFNESS)
 
     my_objective_dict = ObjectiveDict()
-    my_objective_dict.add_objective(name="fitness", maximize=True, tag="<normAbsoluteDisplacement>",
+    my_objective_dict.add_objective(name="fitness", maximize=True,
+                                    tag="<normAbsoluteDisplacement>",
                                     # meta_func=min_energy
                                     )
     my_objective_dict.add_objective(name="age", maximize=False, tag=None)
@@ -160,14 +163,16 @@ if not os.path.isfile("./" + RUN_DIR + "/pickledPops/Gen_0.pickle"):
 
     my_pop = Population(my_objective_dict, MyGenotype, MyPhenotype, pop_size=POP_SIZE)
 
-    my_optimization = ParetoOptimization(my_sim, my_env, my_pop)
-    my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS, num_random_individuals=NUM_RANDOM_INDS,
+    my_optimization = MultiLevelSelectionOptimization(my_sim, my_env, my_pop)
+    my_optimization.run(max_hours_runtime=MAX_TIME, max_gens=MAX_GENS,
+                        num_random_individuals=NUM_RANDOM_INDS,
                         directory=RUN_DIR, name=RUN_NAME, max_eval_time=MAX_EVAL_TIME,
                         time_to_try_again=TIME_TO_TRY_AGAIN, checkpoint_every=CHECKPOINT_EVERY,
                         save_vxa_every=SAVE_VXA_EVERY, save_lineages=SAVE_LINEAGES)
 
 else:
-    continue_from_checkpoint(directory=RUN_DIR, additional_gens=EXTRA_GENS, max_hours_runtime=MAX_TIME,
+    continue_from_checkpoint(directory=RUN_DIR, additional_gens=EXTRA_GENS,
+                             max_hours_runtime=MAX_TIME,
                              max_eval_time=MAX_EVAL_TIME, time_to_try_again=TIME_TO_TRY_AGAIN,
                              checkpoint_every=CHECKPOINT_EVERY, save_vxa_every=SAVE_VXA_EVERY,
                              save_lineages=SAVE_LINEAGES)
